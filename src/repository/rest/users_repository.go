@@ -2,10 +2,11 @@ package rest
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/mercadolibre/golang-restclient/rest"
 	"github.com/superbkibbles/bookstore_oauth-api/src/domain/users"
 	"github.com/superbkibbles/bookstore_oauth-api/src/utils/errors"
-	"time"
 )
 
 var (
@@ -19,13 +20,13 @@ type RestUsersRepository interface {
 	LoginUser(string, string) (*users.User, *errors.RestErr)
 }
 
-type usersRepository struct {}
+type usersRepository struct{}
 
 func NewRepository() RestUsersRepository {
 	return &usersRepository{}
 }
 
-func (u *usersRepository) LoginUser(email, password string) (*users.User, *errors.RestErr){
+func (u *usersRepository) LoginUser(email, password string) (*users.User, *errors.RestErr) {
 	request := users.UserLoginRequest{
 		Email:    email,
 		Password: password,
