@@ -2,11 +2,12 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/mercadolibre/golang-restclient/rest"
 	"github.com/superbkibbles/bookstore_oauth-api/src/domain/users"
-	"github.com/superbkibbles/bookstore_oauth-api/src/utils/errors"
+	"github.com/superbkibbles/bookstore_utils-go/rest_errors"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 )
 
 type RestUsersRepository interface {
-	LoginUser(string, string) (*users.User, *errors.RestErr)
+	LoginUser(string, string) (*users.User, rest_errors.RestErr)
 }
 
 type usersRepository struct{}
@@ -26,7 +27,7 @@ func NewRepository() RestUsersRepository {
 	return &usersRepository{}
 }
 
-func (u *usersRepository) LoginUser(email, password string) (*users.User, *errors.RestErr) {
+func (u *usersRepository) LoginUser(email, password string) (*users.User, rest_errors.RestErr) {
 	request := users.UserLoginRequest{
 		Email:    email,
 		Password: password,
@@ -34,19 +35,18 @@ func (u *usersRepository) LoginUser(email, password string) (*users.User, *error
 
 	response := usersRestClient.Post("/users/login", request)
 	if response == nil || response.Response == nil {
-		return nil, errors.NewInternalServerErr("invalid restClient response when trying to login user")
+		return nil, rest_errors.NewInternalServerErr("invalid restClient response when trying to login user", errors.New("restClient error"))
 	}
 	if response.StatusCode > 299 {
-		var restErr errors.RestErr
-		err := json.Unmarshal(response.Bytes(), &restErr)
+		apiErr, err := rest_errors.NewRestErrorFromBytes(response.Bytes())
 		if err != nil {
-			return nil, errors.NewInternalServerErr("Invalid error interface when trying to login user")
+			return nil, rest_errors.NewInternalServerErr("Invalid error interface when trying to login user", errors.New("ds"))
 		}
-		return nil, &restErr
+		return nil, apiErr
 	}
 	var user users.User
 	if err := json.Unmarshal(response.Bytes(), &user); err != nil {
-		return nil, errors.NewInternalServerErr("error while trying to unmarshal users login response")
+		return nil, rest_errors.NewInternalServerErr("error while trying to unmarshal users login response", errors.New("JSON parsing error"))
 	}
 	return &user, nil
 }
